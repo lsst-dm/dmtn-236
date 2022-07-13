@@ -1,0 +1,9 @@
+% bibentry template for lsst.bib in https://github.com/lsst/lsst-texmf/blob/main/texmf/bibtex/bib/lsst.bib
+
+@DocuShare{DMTN-236,
+   author = { Andy Salnikov },
+    title = {ObsCore as a View of Butler Registry Tables},
+     year = 2022,
+    month = Jul,
+   handle = {DMTN-236},
+      url = {https://dmtn-236.lsst.io } }

@@ -280,7 +280,30 @@ In general, solutions based on server-side implementation, either in plain SQL o
 Proving or testing that duplicated logic is implemented correctly may be a major issue.
 The need to transform spatial regions from ``sphgeom`` encoding to ADQL also makes SQL-based solutions problematic, although this issue can be mitigated by replacing ``sphgeom`` binary encoding with some other text-based representation in the Registry schema.
 
+Ideas for client-side implementation
+------------------------------------
+
 Overall, a solution based on client-side updates may have fewer potential issues compared to other solutions.
+Implementation of this approach can be straightforward, though the concerns related to collection management also need a consideration.
+Like other parts of the Registry, the ObsCore-related operations can be implemented via a separate manager class, which can be optional for repositories that do not need ObsCore support.
+
+There are several Registry operations that may need to update ObsCore table:
+
+- bulk import of the exported data, or ingest of raw datasets;
+- some regular ``Butler.put()`` inserts;
+- addition of a non-empty run collection to a chained collection if chained collection is mirrored to the ObsCore table;
+- removal of individual datasets or a whole run collection;
+- removal of a run collection from a chained collection, keeping run collection.
+
+These operation could call methods of a new ObsCore manager instance and pass the information necessary for updating ObsCore table.
+Addition of the new datasets should be straightforward, minor concern is potential performance penalty to query the Registry for additional information that needs to be stored with the new dataset.
+Complete removal of a dataset from the Registry should also cause its removal from ObsCore table, this could be handled transparently via the foreign key on ``dataset`` table and CASCADE action.
+Changes in collections composition may need some attention but should not be hard to implement.
+
+The schema of the ObsCore table is likely to change over time.
+The configuration which controls the ObsCore export process determines both the schema of the table and its contents.
+To support changing configuration it should be possible to utilize the same migration tools that are used by other Registry managers.
+One potentially interesting issue for this approach is whether one Registry could have more than one ObsCore table based on different configurations.
 
 
 .. _dax_obscore: https://github.com/lsst-dm/dax_obscore

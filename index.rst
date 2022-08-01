@@ -2,10 +2,6 @@
 
 .. sectnum::
 
-.. note::
-
-   **This technote is a work-in-progress.**
-
 Abstract
 ========
 

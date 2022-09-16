@@ -301,6 +301,38 @@ The configuration which controls the ObsCore export process determines both the 
 To support changing configuration it should be possible to utilize the same migration tools that are used by other Registry managers.
 One potentially interesting issue for this approach is whether one Registry could have more than one ObsCore table based on different configurations.
 
+Collection issues with client-side updates
+------------------------------------------
+
+Similarly to the standalone script in ``dax_obscore``, a new ObsCore manager should be configured with a list of collections and dataset types to monitor for new datasets.
+Allowing arbitrary types of collections in the collection list causes significant issues with consistency and performance, few examples include:
+
+- Changes in the composition of monitored chained collections can result in addition of non-empty run collections.
+  This will cause an insertion of many records in obscore table.
+- Mixture of run, tagged, and calibration collections results in potentially multiple origins of a single obscore record.
+  Removal of records from obscore table (e.g. due to its being disassociated from a tagged collection) would need checks of all other origins for records existence.
+- Bulk insertion or additional checks during removal of obscore records pose additional complications for regular Registry database operation.
+  They can potentially be performed by a separate standalone "cleanup" script which can run regularly, but that script cannot scale reasonably with growing number of records.
+- It is similarly difficult to make contents of the obscore table consistent with the results of ``Registry.queryDatasets()`` method with ``findFirst=True``.
+  Supporting this feature would need checks that inserted dataset can potentially replace dataset present in later collections, or should be ignored if a matching dataset already exists in previous collections.
+
+Some of these issues can be resolved by limiting the kind of collections that can appear in the list.
+Two possible complementary options include multiple run collections, or a single tagged collection.
+
+If ObsCore manager is configured with multiple run collection, excluding tagged and calibration collections, then the issue with multiple possible origins of obscore records does not exist (single dataset can only exist in a single run collection).
+Run collections can be configured as a list of exact collection names or a patterns/regular expressions matching multiple collections.
+Chained collections cannot be used for configuration as it is possible to add a non-empty run collection to a chained collection, which would trigger a bulk insert.
+Multiple run collections do not solve issue with ``Registry.queryDatasets()`` and ``findFirst=True``, it would be a significant complication and performance issue to try to query other collections while inserting datasets into obscore table.
+
+Alternative approach is to shift hard decisions to some external logic by only monitoring a single tagged collection.
+Client code would be required to associate datasets that should appear in obscore table with a special tagged collection.
+This also solves issue with ``findFirst=True``, because single tagged collection can only contain unique dataset type and DataId combination.
+Associating a dataset with a special obscore collection would potentially require disassociation of a matching existing dataset that should be replaced.
+
+An implementation of ObsCore manager could support both types of collections, one specific option would have to be selected during registry configuration.
+A configuration of ObsCore manager is persisted in the registry,.
+Applying any changes to this configuration, including changes to the list of collections, or change of collection types, requires schema/data migration with potential downtime.
+
 
 .. _dax_obscore: https://github.com/lsst-dm/dax_obscore
 .. _incremental vew update: https://wiki.postgresql.org/wiki/Incremental_View_Maintenance
